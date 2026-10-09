@@ -3,636 +3,613 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Neon Void: Troop Commander</title>
+<title>Neon Void: Troop Runner</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;user-select:none}
 body{background:#0a0a0f;overflow:hidden;font-family:'Orbitron',monospace;color:#fff}
 canvas{display:block}
+#ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:20px;z-index:10}
+.hud-top{display:flex;justify-content:space-between;align-items:flex-start}
+.sl{font-size:11px;color:#0ff;opacity:.8;letter-spacing:2px}
+.sv{font-size:32px;font-weight:900;text-shadow:0 0 20px #0ff}
+.hs{font-size:13px;color:#f0f;margin-top:4px;text-shadow:0 0 10px #f0f}
+.coin-display{color:#ffd700;text-shadow:0 0 10px #ffd700}
+.boss-hud{text-align:center;display:none}
+.bn{font-size:16px;color:#f44;letter-spacing:4px;margin-bottom:6px;text-shadow:0 0 15px #f44;animation:bp 1s infinite}
+.bhbg{width:350px;height:10px;background:rgba(255,0,0,.2);border-radius:5px;overflow:hidden;border:1px solid rgba(255,0,0,.4);margin:0 auto}
+.bhf{height:100%;background:linear-gradient(90deg,#f44,#f0f);width:100%;transition:width .3s}
+.bph{font-size:10px;color:#f0f;margin-top:4px;letter-spacing:2px}
+.score-req{font-size:9px;color:#888;margin-top:2px;letter-spacing:1px}
+@keyframes bp{0%,100%{opacity:1}50%{opacity:.6}}
+.sbc{width:180px;text-align:right}
+.sbl{font-size:11px;color:#f0f;opacity:.8;letter-spacing:2px;margin-bottom:4px}
+.sbbg{width:100%;height:7px;background:rgba(255,0,255,.2);border-radius:4px;overflow:hidden}
+.sbf{height:100%;background:#f0f;width:10%;transition:width .3s}
 
-/* UI LAYOUT */
-#gameUI{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;display:flex;flex-direction:column}
-.top-bar{display:flex;justify-content:space-between;padding:15px 25px;background:linear-gradient(180deg,rgba(0,0,0,0.8),transparent)}
-.res-group{display:flex;gap:20px;align-items:center}
-.res-item{display:flex;flex-direction:column;align-items:center}
-.res-label{font-size:9px;color:#888;letter-spacing:2px;text-transform:uppercase}
-.res-val{font-size:20px;font-weight:900;text-shadow:0 0 10px currentColor}
-.coin-color{color:#ffd700}.score-color{color:#0ff}.wave-color{color:#f0f}
+/* TROOP SELECTOR BAR */
+.troop-bar{display:flex;gap:6px;justify-content:center;pointer-events:auto;padding:8px;background:linear-gradient(0deg,rgba(0,0,0,.9),transparent);border-radius:8px}
+.troop-btn{width:56px;height:70px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:.2s;position:relative}
+.troop-btn:hover{background:rgba(255,255,255,.1);border-color:rgba(0,255,255,.4)}
+.troop-btn.active{border-color:#0ff;box-shadow:0 0 12px rgba(0,255,255,.3);background:rgba(0,255,255,.1)}
+.troop-btn.locked{opacity:.25;pointer-events:none}
+.tb-icon{font-size:20px;margin-bottom:2px}
+.tb-name{font-size:6px;letter-spacing:.5px;color:#aaa;text-align:center;line-height:1.1}
+.tb-cd{position:absolute;bottom:2px;font-size:7px;color:#ffd700;font-weight:700}
+.tb-badge{position:absolute;top:-4px;right:-4px;font-size:6px;padding:1px 4px;border-radius:6px;font-weight:700}
+.badge-buff{background:#0f0;color:#000}.badge-nerf{background:#f44;color:#fff}
 
-/* BOSS BAR */
-.boss-bar-container{padding:0 25px;margin-top:5px;display:none}
-.boss-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
-.boss-name{font-size:13px;color:#f44;letter-spacing:3px;text-shadow:0 0 10px #f44}
-.boss-score-req{font-size:10px;color:#888;letter-spacing:1px}
-.boss-hp-bg{width:100%;height:10px;background:rgba(255,0,0,0.15);border-radius:5px;overflow:hidden;border:1px solid rgba(255,0,0,0.3)}
-.boss-hp-fill{height:100%;background:linear-gradient(90deg,#f44,#f0f);width:100%;transition:width 0.3s}
-
-/* TROOP PANEL (BOTTOM) */
-.troop-panel{margin-top:auto;padding:10px 15px;background:linear-gradient(0deg,rgba(0,0,0,0.9),rgba(0,0,0,0.6),transparent);pointer-events:auto;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-.troop-card{width:72px;height:90px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;position:relative}
-.troop-card:hover{background:rgba(255,255,255,0.1);border-color:rgba(0,255,255,0.4);transform:translateY(-3px)}
-.troop-card.selected{border-color:#0ff;box-shadow:0 0 15px rgba(0,255,255,0.3);background:rgba(0,255,255,0.1)}
-.troop-card.locked{opacity:0.3;pointer-events:none}
-.troop-icon{font-size:24px;margin-bottom:4px}
-.troop-name{font-size:7px;letter-spacing:1px;color:#aaa;text-align:center;line-height:1.2}
-.troop-cost{font-size:9px;color:#ffd700;margin-top:3px;font-weight:700}
-.troop-badge{position:absolute;top:-5px;right:-5px;font-size:8px;padding:2px 5px;border-radius:8px;font-weight:700;letter-spacing:0.5px}
-.badge-new{background:#0ff;color:#000}.badge-buff{background:#0f0;color:#000}.badge-nerf{background:#f44;color:#fff}
-
-/* REDEEM & UPGRADE PANEL */
-.side-panel{position:absolute;right:15px;top:50%;transform:translateY(-50%);pointer-events:auto;display:flex;flex-direction:column;gap:8px}
-.panel-btn{padding:10px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:6px;color:#aaa;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:1px;cursor:pointer;transition:0.2s;text-align:center}
-.panel-btn:hover{background:rgba(0,255,255,0.1);border-color:#0ff;color:#0ff}
+/* SIDE BUTTONS */
+.side-btns{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:auto;display:flex;flex-direction:column;gap:6px}
+.side-btn{padding:8px 12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);border-radius:5px;color:#aaa;font-family:'Orbitron',monospace;font-size:8px;letter-spacing:1px;cursor:pointer;transition:.2s;text-align:center}
+.side-btn:hover{background:rgba(0,255,255,.1);border-color:#0ff;color:#0ff}
 
 /* MODAL */
-.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);z-index:50;display:none;align-items:center;justify-content:center;pointer-events:auto}
-.modal-overlay.open{display:flex}
-.modal{background:#111;border:1px solid #333;border-radius:12px;padding:25px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto}
-.modal h2{font-size:18px;color:#0ff;letter-spacing:3px;margin-bottom:15px;text-shadow:0 0 10px rgba(0,255,255,0.3)}
-.modal-close{float:right;background:none;border:none;color:#666;font-size:20px;cursor:pointer;font-family:'Orbitron',monospace}
-.modal-close:hover{color:#fff}
-
-/* REDEEM */
-.redeem-row{display:flex;gap:8px;margin-bottom:15px}
-.redeem-input{flex:1;padding:10px 14px;background:#1a1a1a;border:1px solid #333;border-radius:6px;color:#fff;font-family:'Orbitron',monospace;font-size:13px;outline:none;letter-spacing:2px}
-.redeem-input:focus{border-color:#0ff}
-.redeem-btn{padding:10px 20px;background:#0ff;color:#000;border:none;border-radius:6px;font-family:'Orbitron',monospace;font-weight:700;cursor:pointer;letter-spacing:1px;font-size:12px}
-.redeem-btn:hover{background:#fff}
-.redeem-msg{font-size:11px;margin-top:5px;min-height:16px;letter-spacing:1px}
-.msg-ok{color:#0f0}.msg-err{color:#f44}
-
-/* UPGRADE */
-.upgrade-row{display:flex;align-items:center;justify-content:space-between;padding:10px;border-bottom:1px solid #222}
-.upgrade-info{display:flex;align-items:center;gap:10px}
-.upgrade-icon{font-size:22px}
-.upgrade-name{font-size:11px;color:#ccc;letter-spacing:1px}
-.upgrade-stats{font-size:9px;color:#888;margin-top:2px}
-.upgrade-btn{padding:6px 14px;background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.3);border-radius:4px;color:#ffd700;font-family:'Orbitron',monospace;font-size:10px;cursor:pointer;font-weight:700;transition:0.2s}
-.upgrade-btn:hover{background:rgba(255,215,0,0.3);border-color:#ffd700}
-.upgrade-btn:disabled{opacity:0.3;cursor:not-allowed}
-
-/* PATCH NOTES */
-.patch-note{padding:8px 10px;background:rgba(255,255,255,0.03);border-left:3px solid #0ff;margin-bottom:6px;border-radius:0 4px 4px 0}
-.patch-note.buff{border-left-color:#0f0}.patch-note.nerf{border-left-color:#f44}
-.patch-troop{font-size:10px;color:#fff;font-weight:700;letter-spacing:1px}
-.patch-desc{font-size:9px;color:#888;margin-top:2px;line-height:1.4}
-.patch-src{font-size:8px;color:#555;margin-top:3px;font-style:italic}
+.modal-bg{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);z-index:50;display:none;align-items:center;justify-content:center;pointer-events:auto}
+.modal-bg.open{display:flex}
+.modal{background:#111;border:1px solid #333;border-radius:10px;padding:22px;max-width:460px;width:90%;max-height:75vh;overflow-y:auto}
+.modal h2{font-size:16px;color:#0ff;letter-spacing:3px;margin-bottom:12px}
+.modal-x{float:right;background:none;border:none;color:#666;font-size:18px;cursor:pointer;font-family:'Orbitron',monospace}
+.modal-x:hover{color:#fff}
+.redeem-row{display:flex;gap:6px;margin-bottom:12px}
+.redeem-in{flex:1;padding:9px 12px;background:#1a1a1a;border:1px solid #333;border-radius:5px;color:#fff;font-family:'Orbitron',monospace;font-size:12px;outline:none;letter-spacing:2px}
+.redeem-in:focus{border-color:#0ff}
+.redeem-go{padding:9px 18px;background:#0ff;color:#000;border:none;border-radius:5px;font-family:'Orbitron',monospace;font-weight:700;cursor:pointer;font-size:11px}
+.redeem-go:hover{background:#fff}
+.rmsg{font-size:10px;margin-top:4px;min-height:14px;letter-spacing:1px}
+.mok{color:#0f0}.merr{color:#f44}
+.upg-row{display:flex;align-items:center;justify-content:space-between;padding:8px;border-bottom:1px solid #222}
+.upg-info{display:flex;align-items:center;gap:8px}
+.upg-icon{font-size:18px}
+.upg-nm{font-size:10px;color:#ccc;letter-spacing:1px}
+.upg-st{font-size:8px;color:#888;margin-top:1px}
+.upg-btn{padding:5px 12px;background:rgba(255,215,0,.15);border:1px solid rgba(255,215,0,.3);border-radius:4px;color:#ffd700;font-family:'Orbitron',monospace;font-size:9px;cursor:pointer;font-weight:700}
+.upg-btn:hover{background:rgba(255,215,0,.3)}
+.upg-btn:disabled{opacity:.3;cursor:not-allowed}
+.pnote{padding:7px 9px;background:rgba(255,255,255,.03);border-left:3px solid #0ff;margin-bottom:5px;border-radius:0 4px 4px 0}
+.pnote.buff{border-left-color:#0f0}.pnote.nerf{border-left-color:#f44}
+.pn-t{font-size:9px;color:#fff;font-weight:700;letter-spacing:1px}
+.pn-d{font-size:8px;color:#888;margin-top:2px;line-height:1.3}
+.pn-s{font-size:7px;color:#555;margin-top:2px;font-style:italic}
 
 /* SCREENS */
-.scr{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,10,15,0.92);backdrop-filter:blur(5px);pointer-events:auto;transition:opacity .3s;z-index:20}
+.scr{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,10,15,.92);backdrop-filter:blur(5px);pointer-events:auto;transition:opacity .3s;z-index:20}
 .scr.hidden{opacity:0;pointer-events:none}
-h1{font-size:48px;font-weight:900;letter-spacing:6px;background:linear-gradient(180deg,#0ff,#f0f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+h1{font-size:50px;font-weight:900;letter-spacing:7px;background:linear-gradient(180deg,#0ff,#f0f);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
 .sub{font-size:13px;color:#888;letter-spacing:4px;margin-bottom:35px}
-.btn{padding:16px 45px;font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:#0a0a0f;background:#0ff;border:none;cursor:pointer;letter-spacing:3px;text-transform:uppercase;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);transition:all .2s}
+.btn{padding:16px 45px;font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:#0a0a0f;background:#0ff;border:none;cursor:pointer;letter-spacing:3px;text-transform:uppercase;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);transition:.2s}
 .btn:hover{background:#fff;transform:scale(1.05);box-shadow:0 0 30px #0ff}
+.ch{margin-top:25px;font-size:11px;color:#555;letter-spacing:2px;text-align:center;line-height:2}
+.key{display:inline-block;padding:2px 8px;border:1px solid #444;border-radius:3px;color:#aaa;margin:0 2px}
+.gos{font-size:44px;font-weight:900;color:#f0f;text-shadow:0 0 30px #f0f;margin:15px 0}
+.gol{font-size:13px;color:#888;letter-spacing:3px}
 .scanlines{position:fixed;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.08) 2px,rgba(0,0,0,.08) 4px);pointer-events:none;z-index:100}
-.notif{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(0,255,255,0.15);border:1px solid #0ff;color:#0ff;padding:10px 25px;border-radius:6px;font-size:12px;letter-spacing:2px;z-index:60;opacity:0;transition:opacity 0.3s;pointer-events:none;text-shadow:0 0 10px rgba(0,255,255,0.5)}
+.notif{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(0,255,255,.15);border:1px solid #0ff;color:#0ff;padding:8px 22px;border-radius:5px;font-size:11px;letter-spacing:2px;z-index:60;opacity:0;transition:opacity .3s;pointer-events:none}
 .notif.show{opacity:1}
+.warn{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;opacity:0}
+.warn.active{animation:wf .3s ease-out}
+@keyframes wf{0%{background:rgba(255,0,0,.3);opacity:1}100%{background:transparent;opacity:0}}
 </style>
 </head>
 <body>
 <canvas id="gc"></canvas>
 <div class="scanlines"></div>
+<div class="warn" id="wo"></div>
 <div class="notif" id="notif"></div>
 
-<!-- GAME UI -->
-<div id="gameUI">
-    <div class="top-bar">
-        <div class="res-group">
-            <div class="res-item"><span class="res-label">Coins</span><span class="res-val coin-color" id="coinDisplay">0</span></div>
-            <div class="res-item"><span class="res-label">Score</span><span class="res-val score-color" id="scoreDisplay">0</span></div>
-        </div>
-        <div class="res-group">
-            <div class="res-item"><span class="res-label">Wave</span><span class="res-val wave-color" id="waveDisplay">1</span></div>
-            <div class="res-item"><span class="res-label">Boss</span><span class="res-val" style="color:#f44" id="bossNumDisplay">1/5</span></div>
-        </div>
-    </div>
-
-    <div class="boss-bar-container" id="bossBarContainer">
-        <div class="boss-info">
-            <span class="boss-name" id="bossNameDisplay">⚠ BOSS NAME</span>
-            <span class="boss-score-req" id="bossReqDisplay">Need 7,000 score to unlock next</span>
-        </div>
-        <div class="boss-hp-bg"><div class="boss-hp-fill" id="bossHpFill"></div></div>
-    </div>
-
-    <div class="side-panel">
-        <div class="panel-btn" onclick="openModal('redeem')">🎟️ REDEEM CODE</div>
-        <div class="panel-btn" onclick="openModal('upgrade')">⬆️ UPGRADE STATS</div>
-        <div class="panel-btn" onclick="openModal('patch')">📋 PATCH NOTES</div>
-    </div>
-
-    <div class="troop-panel" id="troopPanel"></div>
+<div id="ui">
+<div class="hud-top">
+<div>
+<div class="sl">SCORE</div><div class="sv" id="sd">0</div>
+<div class="hs" id="hd">BEST: 0</div>
+<div class="sl" style="margin-top:6px">COINS</div><div class="sv coin-display" id="cd" style="font-size:20px">0</div>
+</div>
+<div class="boss-hud" id="bh">
+<div class="bn" id="bname">⚠ BOSS ⚠</div>
+<div class="bhbg"><div class="bhf" id="bhp"></div></div>
+<div class="bph" id="bphase">PHASE 1</div>
+<div class="score-req" id="breq">Kill boss → earn 7,000 score for next</div>
+</div>
+<div class="sbc"><div class="sbl">VELOCITY</div><div class="sbbg"><div class="sbf" id="sb"></div></div></div>
 </div>
 
-<!-- START SCREEN -->
-<div class="scr" id="startScreen">
-    <h1>TROOP COMMANDER</h1>
-    <div class="sub">NEON VOID UNIVERSE</div>
-    <button class="btn" id="startBtn">DEPLOY TROOPS</button>
-    <div style="margin-top:20px;font-size:10px;color:#555;letter-spacing:1px;text-align:center;line-height:2">
-        Click troop card → Click battlefield to deploy<br>
-        Redeem code: AbCdEf | Balance updates weekly via @GGuy
-    </div>
+<div class="side-btns">
+<div class="side-btn" onclick="openM('redeem')">🎟️ CODE</div>
+<div class="side-btn" onclick="openM('upgrade')">⬆️ UPGRADE</div>
+<div class="side-btn" onclick="openM('patch')">📋 PATCH</div>
 </div>
 
-<!-- GAME OVER SCREEN -->
-<div class="scr hidden" id="goScreen">
-    <div style="font-size:14px;color:#888;letter-spacing:3px">BASE DESTROYED</div>
-    <div style="font-size:44px;font-weight:900;color:#f0f;text-shadow:0 0 30px #f0f;margin:15px 0" id="finalScore">0</div>
-    <div style="font-size:13px;color:#888;letter-spacing:3px;margin-bottom:25px">FINAL SCORE</div>
-    <button class="btn" id="retryBtn">REDEPLOY</button>
+<div class="troop-bar" id="troopBar"></div>
+</div>
+
+<div class="scr" id="ss">
+<h1>NEON VOID</h1>
+<div class="sub">TROOP RUNNER EDITION</div>
+<button class="btn" id="startBtn">START RUN</button>
+<div class="ch">
+<span class="key">←</span><span class="key">→</span> / <span class="key">A</span><span class="key">D</span> Move<br>
+<span class="key">SPACE</span> Dash | <span class="key">1-7</span> Switch Troop<br>
+<span class="key">↑↓</span> / <span class="key">W S</span> Vertical (Boss Only)<br>
+Redeem: AbCdEf | Balance: TikTok @GGuy
+</div>
+</div>
+
+<div class="scr hidden" id="gs">
+<div class="gol">SYSTEM FAILURE</div>
+<div class="gos" id="fs">0</div>
+<div class="gol" style="margin-bottom:25px">FINAL SCORE</div>
+<button class="btn" id="retryBtn">RETRY</button>
 </div>
 
 <!-- MODALS -->
-<div class="modal-overlay" id="redeemModal">
-    <div class="modal">
-        <button class="modal-close" onclick="closeModal('redeem')">✕</button>
-        <h2>🎟️ REDEEM CODE</h2>
-        <div class="redeem-row">
-            <input type="text" class="redeem-input" id="redeemInput" placeholder="Enter code..." maxlength="20">
-            <button class="redeem-btn" id="redeemBtn">REDEEM</button>
-        </div>
-        <div class="redeem-msg" id="redeemMsg"></div>
-        <div style="margin-top:15px;font-size:9px;color:#555;line-height:1.6">
-            Active codes:<br>
-            <span style="color:#0ff">AbCdEf</span> → 500 Coins
-        </div>
-    </div>
-</div>
-
-<div class="modal-overlay" id="upgradeModal">
-    <div class="modal">
-        <button class="modal-close" onclick="closeModal('upgrade')">✕</button>
-        <h2>⬆️ UPGRADE STATS</h2>
-        <div style="margin-bottom:12px;font-size:11px;color:#ffd700;letter-spacing:1px">Available Coins: <span id="upgradeCoins">0</span></div>
-        <div id="upgradeList"></div>
-    </div>
-</div>
-
-<div class="modal-overlay" id="patchModal">
-    <div class="modal">
-        <button class="modal-close" onclick="closeModal('patch')">✕</button>
-        <h2>📋 WEEKLY BALANCE CHANGES</h2>
-        <div style="margin-bottom:12px;font-size:10px;color:#888;letter-spacing:1px">Source: TikTok @GGuy | Week 42 Patch</div>
-        <div id="patchNotes"></div>
-    </div>
-</div>
+<div class="modal-bg" id="redeemModal"><div class="modal"><button class="modal-x" onclick="closeM('redeem')">✕</button><h2>🎟️ REDEEM CODE</h2><div class="redeem-row"><input type="text" class="redeem-in" id="rIn" placeholder="Enter code..." maxlength="20"><button class="redeem-go" id="rBtn">REDEEM</button></div><div class="rmsg" id="rMsg"></div><div style="margin-top:12px;font-size:8px;color:#555;line-height:1.5">Active: <span style="color:#0ff">AbCdEf</span> → 500 Coins</div></div></div>
+<div class="modal-bg" id="upgradeModal"><div class="modal"><button class="modal-x" onclick="closeM('upgrade')">✕</button><h2>⬆️ UPGRADE TROOPS</h2><div style="margin-bottom:10px;font-size:10px;color:#ffd700">Coins: <span id="uC">0</span></div><div id="uList"></div></div></div>
+<div class="modal-bg" id="patchModal"><div class="modal"><button class="modal-x" onclick="closeM('patch')">✕</button><h2>📋 WEEKLY BALANCE</h2><div style="margin-bottom:10px;font-size:9px;color:#888">Source: TikTok @GGuy | Week 42</div><div id="pNotes"></div></div></div>
 
 <script>
 // =============================================
-// 🎵 SYNTHWAVE MUSIC ENGINE (BUILT-IN)
+// 🎵 SYNTHWAVE MUSIC (BUILT-IN)
 // =============================================
-var audioCtx=null,musicPlaying=false,musicTimer=null,nextNote=0,beatIdx=0;
-function initAudio(){if(audioCtx)return;try{audioCtx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}
-function makeKick(t){if(!audioCtx)return;var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(30,t+0.15);g.gain.setValueAtTime(0.6,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.3);o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+0.3)}
-function makeSnare(t){if(!audioCtx)return;var len=audioCtx.sampleRate*0.1,buf=audioCtx.createBuffer(1,len,audioCtx.sampleRate),d=buf.getChannelData(0);for(var i=0;i<len;i++)d[i]=Math.random()*2-1;var n=audioCtx.createBufferSource();n.buffer=buf;var g=audioCtx.createGain(),f=audioCtx.createBiquadFilter();f.type='highpass';f.frequency.value=1200;g.gain.setValueAtTime(0.35,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.1);n.connect(f);f.connect(g);g.connect(audioCtx.destination);n.start(t);n.stop(t+0.1)}
-function makeHat(t,op){if(!audioCtx)return;var dur=op?0.1:0.03,len=audioCtx.sampleRate*dur,buf=audioCtx.createBuffer(1,len,audioCtx.sampleRate),d=buf.getChannelData(0);for(var i=0;i<len;i++)d[i]=Math.random()*2-1;var n=audioCtx.createBufferSource();n.buffer=buf;var g=audioCtx.createGain(),f=audioCtx.createBiquadFilter();f.type='highpass';f.frequency.value=7000;g.gain.setValueAtTime(op?0.1:0.07,t);g.gain.exponentialRampToValueAtTime(0.001,t+dur);n.connect(f);f.connect(g);g.connect(audioCtx.destination);n.start(t);n.stop(t+dur)}
-function makeBass(t,freq,dur){if(!audioCtx)return;var o=audioCtx.createOscillator();o.type='sawtooth';o.frequency.value=freq;var g=audioCtx.createGain(),f=audioCtx.createBiquadFilter();f.type='lowpass';f.frequency.setValueAtTime(700,t);f.frequency.exponentialRampToValueAtTime(180,t+dur);g.gain.setValueAtTime(0.18,t);g.gain.linearRampToValueAtTime(0,t+dur);o.connect(f);f.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+dur)}
-var bassLine=[55,55,73.4,65.4,55,55,82.4,73.4];
-function scheduleBeat(){if(!audioCtx||!musicPlaying)return;while(nextNote<audioCtx.currentTime+0.1){var s=beatIdx%16;if(s%4===0)makeKick(nextNote);if(s===4||s===12)makeSnare(nextNote);makeHat(nextNote,s%2===1);if(s%2===0)makeBass(nextNote,bassLine[Math.floor(s/2)%bassLine.length],60/BPM/4*1.8);nextNote+=60/BPM/4;beatIdx++}}
-var BPM=128;
-function startMusic(){initAudio();if(!audioCtx)return;if(audioCtx.state==='suspended')audioCtx.resume();musicPlaying=true;nextNote=audioCtx.currentTime+0.05;beatIdx=0;if(musicTimer)clearInterval(musicTimer);musicTimer=setInterval(scheduleBeat,25)}
-function stopMusic(){musicPlaying=false;if(musicTimer){clearInterval(musicTimer);musicTimer=null}}
+var ac=null,mp=false,mt=null,nn=0,bi=0,BPM=128,ST=60/BPM/4;
+function iA(){if(ac)return;try{ac=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+function mK(t){if(!ac)return;var o=ac.createOscillator(),g=ac.createGain();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(30,t+.15);g.gain.setValueAtTime(.6,t);g.gain.exponentialRampToValueAtTime(.001,t+.3);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.3)}
+function mS(t){if(!ac)return;var l=ac.sampleRate*.1,b=ac.createBuffer(1,l,ac.sampleRate),d=b.getChannelData(0);for(var i=0;i<l;i++)d[i]=Math.random()*2-1;var n=ac.createBufferSource();n.buffer=b;var g=ac.createGain(),f=ac.createBiquadFilter();f.type='highpass';f.frequency.value=1200;g.gain.setValueAtTime(.35,t);g.gain.exponentialRampToValueAtTime(.001,t+.1);n.connect(f);f.connect(g);g.connect(ac.destination);n.start(t);n.stop(t+.1)}
+function mH(t,op){if(!ac)return;var du=op?.1:.03,l=ac.sampleRate*du,b=ac.createBuffer(1,l,ac.sampleRate),d=b.getChannelData(0);for(var i=0;i<l;i++)d[i]=Math.random()*2-1;var n=ac.createBufferSource();n.buffer=b;var g=ac.createGain(),f=ac.createBiquadFilter();f.type='highpass';f.frequency.value=7000;g.gain.setValueAtTime(op?.1:.07,t);g.gain.exponentialRampToValueAtTime(.001,t+du);n.connect(f);f.connect(g);g.connect(ac.destination);n.start(t);n.stop(t+du)}
+function mB(t,fr,du){if(!ac)return;var o=ac.createOscillator();o.type='sawtooth';o.frequency.value=fr;var g=ac.createGain(),f=ac.createBiquadFilter();f.type='lowpass';f.frequency.setValueAtTime(700,t);f.frequency.exponentialRampToValueAtTime(180,t+du);g.gain.setValueAtTime(.18,t);g.gain.linearRampToValueAtTime(0,t+du);o.connect(f);f.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+du)}
+var bL=[55,55,73.4,65.4,55,55,82.4,73.4];
+function sB(){if(!ac||!mp)return;while(nn<ac.currentTime+.1){var s=bi%16;if(s%4===0)mK(nn);if(s===4||s===12)mS(nn);mH(nn,s%2===1);if(s%2===0)mB(nn,bL[Math.floor(s/2)%bL.length],ST*1.8);nn+=ST;bi++}}
+function startM(){iA();if(!ac)return;if(ac.state==='suspended')ac.resume();mp=true;nn=ac.currentTime+.05;bi=0;if(mt)clearInterval(mt);mt=setInterval(sB,25)}
+function stopM(){mp=false;if(mt){clearInterval(mt);mt=null}}
 
 // =============================================
-// 🎮 GAME DATA & STATE
+// 🎮 GAME STATE
 // =============================================
-var canvas=document.getElementById('gc'),ctx=canvas.getContext('2d');
-var W,H;
-function resize(){W=canvas.width=innerWidth;H=canvas.height=innerHeight}
-addEventListener('resize',resize);resize();
+var cv=document.getElementById('gc'),cx=cv.getContext('2d'),W,H;
+function rz(){W=cv.width=innerWidth;H=cv.height=innerHeight;P.y=H-150;P.ty=P.y}
+addEventListener('resize',rz);rz();
 
-// 7 TROOPS with unique attack & status
-var TROOPS=[
-    {id:0,name:"SCOUT",icon:"⚡",cost:50,hp:80,dmg:15,range:120,spd:2.5,atkSpd:0.8,type:"melee",status:"fast",desc:"Fast melee, low HP",color:"#0ff",lvl:1,upgCost:100},
-    {id:1,name:"GUNNER",icon:"🔫",cost:100,hp:60,dmg:25,range:250,spd:1.2,atkSpd:1.2,type:"ranged",status:"pierce",desc:"Ranged, pierces 1 enemy",color:"#ff0",lvl:1,upgCost:150},
-    {id:2,name:"TANK",icon:"🛡️",cost:200,hp:300,dmg:10,range:80,spd:0.8,atkSpd:1.5,type:"melee",status:"taunt",desc:"High HP, taunts enemies",color:"#4af",lvl:1,upgCost:250},
-    {id:3,name:"MEDIC",icon:"💚",cost:150,hp:100,dmg:0,range:150,spd:1.0,atkSpd:2.0,type:"support",status:"heal",desc:"Heals allies in range",color:"#0f0",lvl:1,upgCost:200},
-    {id:4,name:"SNIPER",icon:"🎯",cost:250,hp:40,dmg:80,range:400,spd:0.6,atkSpd:3.0,type:"ranged",status:"crit",desc:"Slow but massive crit dmg",color:"#f0f",lvl:1,upgCost:300},
-    {id:5,name:"BOMBER",icon:"💣",cost:300,hp:70,dmg:40,range:200,spd:0.9,atkSpd:2.5,type:"ranged",status:"aoe",desc:"AOE splash damage",color:"#f80",lvl:1,upgCost:350},
-    {id:6,name:"COMMANDER",icon:"👑",cost:500,hp:150,dmg:30,range:180,spd:1.1,atkSpd:1.8,type:"support",status:"buff",desc:"Buffs nearby troops +20% DMG",color:"#ffd700",lvl:1,upgCost:500}
-];
-
-// Weekly balance changes (simulated from TikTok @GGuy)
-var PATCH_NOTES=[
-    {troop:"SCOUT",type:"buff",desc:"ATK Speed +15%, Movement Speed +10%",src:"@GGuy Week 42"},
-    {troop:"TANK",type:"nerf",desc:"HP reduced 300→280 base, Taunt duration -0.5s",src:"@GGuy Week 42"},
-    {troop:"SNIPER",type:"buff",desc:"Crit multiplier 2x→2.5x, Range +50",src:"@GGuy Week 42"},
-    {troop:"BOMBER",type:"nerf",desc:"AOE radius reduced 15%, Cost 280→300",src:"@GGuy Week 42"},
-    {troop:"MEDIC",type:"buff",desc:"Heal per tick +25%, Now heals self too",src:"@GGuy Week 42"},
-    {troop:"GUNNER",type:"buff",desc:"Pierce count 1→2 targets",src:"@GGuy Week 42"},
-    {troop:"COMMANDER",type:"nerf",desc:"Buff radius -20%, DMG bonus 25%→20%",src:"@GGuy Week 42"}
-];
-
-// Apply patch modifiers
-TROOPS[0].atkSpd*=0.85;TROOPS[0].spd*=1.1; // Scout buff
-TROOPS[2].hp=280; // Tank nerf
-TROOPS[4].dmg=100;TROOPS[4].range=450; // Sniper buff
-TROOPS[5].cost=300; // Bomber nerf
-TROOPS[3].dmg=5; // Medic buff (heal value stored as dmg)
-TROOPS[6].dmg=24; // Commander nerf (20% instead of 25%)
-
-// Bosses (sequential, must kill previous)
-var BOSSES=[
-    {name:"VOID SENTINEL",hp:2000,dmg:30,scoreReward:7000,color:"#f44"},
-    {name:"NEON HYDRA",hp:3500,dmg:45,scoreReward:7000,color:"#f0f"},
-    {name:"CYBER TITAN",hp:5000,dmg:60,scoreReward:7000,color:"#ff0"},
-    {name:"PHANTOM CORE",hp:7000,dmg:80,scoreReward:7000,color:"#0ff"},
-    {name:"OMEGA DESTROYER",hp:10000,dmg:100,scoreReward:7000,color:"#ffd700"}
-];
-
-// Game state
-var gameState='MENU',coins=200,score=0,wave=1;
-var currentBossIdx=0,bossActive=false,bossHp=0,bossMaxHp=0;
-var scoreSinceBossDeath=0; // Track score earned AFTER boss death
-var selectedTroop=-1;
-var deployedTroops=[],enemies=[],projectiles=[],particles=[];
-var spawnTimer=0,waveTimer=0;
+var state='MENU',score=0,hi=parseInt(localStorage.getItem('nvTRHS'))||0;
+var coins=200,spd=5,bSpd=5,mSpd=20,frm=0,dCD=0,dashing=false;
+var P={x:0,y:0,w:28,h:28,lane:1,tx:0,ty:0};
+var lanes=[-1,0,1],LW=120,expanded=false;
+var obs=[],parts=[],stars=[],gOff=0,indicators=[];
 var redeemedCodes={};
 
-// Load saved data
-try{
-    var saved=JSON.parse(localStorage.getItem('tvSave'));
-    if(saved){
-        coins=saved.coins||200;
-        redeemedCodes=saved.codes||{};
-        TROOPS.forEach(function(t,i){if(saved.lvls&&saved.lvls[i])t.lvl=saved.lvls[i]});
-    }
-}catch(e){}
+// Load save
+try{var sv=JSON.parse(localStorage.getItem('nvTRSave'));if(sv){coins=sv.coins||200;redeemedCodes=sv.codes||{};TROOPS.forEach(function(t,i){if(sv.lvls&&sv.lvls[i])t.lvl=sv.lvls[i]})}}catch(e){}
+function save(){try{localStorage.setItem('nvTRSave',JSON.stringify({coins:coins,codes:redeemedCodes,lvls:TROOPS.map(function(t){return t.lvl})}))}catch(e){}}
 
-function saveGame(){
-    try{localStorage.setItem('tvSave',JSON.stringify({coins:coins,codes:redeemedCodes,lvls:TROOPS.map(function(t){return t.lvl})}))}catch(e){}
-}
+// =============================================
+// 🎖️ 7 TROOPS - Different Attack & Status
+// Each changes HOW the ship attacks obstacles/boss
+// =============================================
+var TROOPS=[
+    {id:0,name:"BLASTER",icon:"⚡",desc:"Auto-shoot forward",status:"rapid",atkType:"auto",rate:12,dmg:8,range:300,color:"#0ff",lvl:1,uCost:80,cd:0,maxCd:0},
+    {id:1,name:"LASER",icon:"🔴",desc:"Hold beam on boss",status:"beam",atkType:"hold",rate:0,dmg:2,range:500,color:"#f44",lvl:1,uCost:120,cd:0,maxCd:0},
+    {id:2,name:"SHIELD",icon:"🛡️",desc:"Block 3 hits passive",status:"shield",atkType:"passive",rate:0,dmg:0,range:0,color:"#4af",lvl:1,uCost:150,cd:0,maxCd:0,charges:3},
+    {id:3,name:"MISSILE",icon:"🚀",desc:"Homing missiles",status:"homing",atkType:"auto",rate:40,dmg:30,range:400,color:"#f80",lvl:1,uCost:200,cd:0,maxCd:0},
+    {id:4,name:"EMP",icon:"💫",desc:"Freeze all enemies 3s",status:"freeze",atkType:"active",rate:0,dmg:0,range:9999,color:"#ff0",lvl:1,uCost:250,cd:0,maxCd:600},
+    {id:5,name:"DRAIN",icon:"🌀",desc:"Steal HP from boss",status:"lifesteal",atkType:"auto",rate:20,dmg:12,range:350,color:"#f0f",lvl:1,uCost:300,cd:0,maxCd:0},
+    {id:6,name:"NOVA",icon:"💥",desc:"Screen nuke (1 use/run)",status:"nuke",atkType:"active",rate:0,dmg:9999,range:9999,color:"#ffd700",lvl:1,uCost:500,cd:0,maxCd:99999}
+];
+
+// Weekly balance patches (TikTok @GGuy)
+var PATCHES=[
+    {t:"BLASTER",type:"buff",d:"Fire rate +20%, DMG +3 per level",src:"@GGuy W42"},
+    {t:"LASER",type:"nerf",d:"Beam DPS -15%, Range -50",src:"@GGuy W42"},
+    {t:"SHIELD",type:"buff",d:"Charges 2→3 base, Regen after 10s",src:"@GGuy W42"},
+    {t:"MISSILE",type:"buff",d:"Homing accuracy +30%, Splash added",src:"@GGuy W42"},
+    {t:"EMP",type:"nerf",d:"Freeze duration 3s→2.5s, CD +2s",src:"@GGuy W42"},
+    {t:"DRAIN",type:"buff",d:"Heal amount +40%, Now works on obstacles",src:"@GGuy W42"},
+    {t:"NOVA",type:"nerf",d:"Cooldown increased, No longer kills bosses instantly",src:"@GGuy W42"}
+];
+
+// Apply patches
+TROOPS[0].rate=10;TROOPS[0].dmg=11; // Blaster buff
+TROOPS[1].dmg=1.7;TROOPS[1].range=450; // Laser nerf
+TROOPS[2].charges=3; // Shield buff
+TROOPS[3].dmg=35; // Missile buff
+TROOPS[4].maxCd=720; // EMP nerf (longer CD)
+TROOPS[5].dmg=17; // Drain buff
+TROOPS[6].dmg=500; // Nova nerf (not instant boss kill)
+
+var activeTroop=0;
+var shieldCharges=3,shieldRegenTimer=0;
+var novaUsed=false;
+var freezeTimer=0;
+var bossShieldHits=0;
+
+// Boss system
+var BOSS_AT=5000;
+var B={active:false,hp:100,mhp:100,phase:0,at:0,y:-200,ty:120,
+    pats:['meteor','expand','laser','shockwave','chaos'],
+    lx:0,la:false,sr:0,sa:false};
+var currentBossIdx=0,scoreSinceBossDeath=0;
+var BOSSES=[
+    {name:"VOID SENTINEL",hp:2000,color:"#f44"},
+    {name:"NEON HYDRA",hp:3500,color:"#f0f"},
+    {name:"CYBER TITAN",hp:5000,color:"#ff0"},
+    {name:"PHANTOM CORE",hp:7000,color:"#0ff"},
+    {name:"OMEGA DESTROYER",hp:10000,color:"#ffd700"}
+];
+var PNAMES=["PHASE 1: METEOR (2 LANES)","PHASE 2: EXPANSION (7)","PHASE 3: LASER SWEEP","PHASE 4: SHOCKWAVE","PHASE 5: CHAOS"];
+
+// DOM refs
+var sdEl=document.getElementById('sd'),hdEl=document.getElementById('hd'),cdEl=document.getElementById('cd');
+var sbEl=document.getElementById('sb'),ssEl=document.getElementById('ss'),gsEl=document.getElementById('gs');
+var fsEl=document.getElementById('fs'),bhEl=document.getElementById('bh'),bhpEl=document.getElementById('bhp');
+var bphEl=document.getElementById('bphase'),bnameEl=document.getElementById('bname'),breqEl=document.getElementById('breq');
 
 // =============================================
 // UI FUNCTIONS
 // =============================================
-function showNotif(msg){
-    var el=document.getElementById('notif');
-    el.textContent=msg;el.classList.add('show');
-    setTimeout(function(){el.classList.remove('show')},2500);
-}
-
-function openModal(type){document.getElementById(type+'Modal').classList.add('open');if(type==='upgrade')renderUpgradeList();if(type==='patch')renderPatchNotes()}
-function closeModal(type){document.getElementById(type+'Modal').classList.remove('open')}
+function showN(m){var e=document.getElementById('notif');e.textContent=m;e.classList.add('show');setTimeout(function(){e.classList.remove('show')},2500)}
+function openM(t){document.getElementById(t+'Modal').classList.add('open');if(t==='upgrade')renderUpg();if(t==='patch')renderPatch()}
+function closeM(t){document.getElementById(t+'Modal').classList.remove('open')}
 
 // Redeem
-document.getElementById('redeemBtn').onclick=function(){
-    var code=document.getElementById('redeemInput').value.trim();
-    var msgEl=document.getElementById('redeemMsg');
-    if(code==='AbCdEf'){
-        if(redeemedCodes['AbCdEf']){msgEl.className='redeem-msg msg-err';msgEl.textContent='Code already redeemed!';return}
-        redeemedCodes['AbCdEf']=true;coins+=500;saveGame();
-        msgEl.className='redeem-msg msg-ok';msgEl.textContent='✅ +500 Coins received!';
-        updateUI();showNotif('+500 COINS REDEEMED');
-    }else{msgEl.className='redeem-msg msg-err';msgEl.textContent='❌ Invalid code'}
+document.getElementById('rBtn').onclick=function(){
+    var c=document.getElementById('rIn').value.trim(),m=document.getElementById('rMsg');
+    if(c==='AbCdEf'){
+        if(redeemedCodes['AbCdEf']){m.className='rmsg merr';m.textContent='Already redeemed!';return}
+        redeemedCodes['AbCdEf']=true;coins+=500;save();
+        m.className='rmsg mok';m.textContent='✅ +500 Coins!';updateUI();showN('+500 COINS');
+    }else{m.className='rmsg merr';m.textContent='❌ Invalid code'}
 };
 
 // Upgrade
-function renderUpgradeList(){
-    document.getElementById('upgradeCoins').textContent=coins;
-    var list=document.getElementById('upgradeList');list.innerHTML='';
+function renderUpg(){
+    document.getElementById('uC').textContent=coins;
+    var l=document.getElementById('uList');l.innerHTML='';
     TROOPS.forEach(function(t){
-        var cost=t.upgCost*t.lvl;
-        var canAfford=coins>=cost;
-        var div=document.createElement('div');div.className='upgrade-row';
-        div.innerHTML='<div class="upgrade-info"><span class="upgrade-icon">'+t.icon+'</span><div><div class="upgrade-name">'+t.name+' <span style="color:#0ff">Lv.'+t.lvl+'</span></div><div class="upgrade-stats">DMG:'+Math.floor(t.dmg*(1+t.lvl*0.1))+' HP:'+Math.floor(t.hp*(1+t.lvl*0.15))+' | Next: '+cost+' coins</div></div></div><button class="upgrade-btn" '+(canAfford?'':'disabled')+' data-id="'+t.id+'">UPGRADE</button>';
-        list.appendChild(div);
+        var cost=t.uCost*t.lvl,can=coins>=cost;
+        var d=document.createElement('div');d.className='upg-row';
+        d.innerHTML='<div class="upg-info"><span class="upg-icon">'+t.icon+'</span><div><div class="upg-nm">'+t.name+' <span style="color:#0ff">Lv.'+t.lvl+'</span></div><div class="upg-st">'+t.desc+' | Cost: '+cost+'</div></div></div><button class="upg-btn" '+(can?'':'disabled')+' data-id="'+t.id+'">UPGRADE</button>';
+        l.appendChild(d);
     });
-    list.querySelectorAll('.upgrade-btn').forEach(function(btn){
-        btn.onclick=function(){
-            var id=parseInt(this.dataset.id);var t=TROOPS[id];var cost=t.upgCost*t.lvl;
-            if(coins>=cost){coins-=cost;t.lvl++;saveGame();renderUpgradeList();updateUI();showNotif(t.name+' upgraded to Lv.'+t.lvl)}
-        };
+    l.querySelectorAll('.upg-btn').forEach(function(b){
+        b.onclick=function(){var id=+this.dataset.id,t=TROOPS[id],cost=t.uCost*t.lvl;
+            if(coins>=cost){coins-=cost;t.lvl++;save();renderUpg();updateUI();showN(t.name+' → Lv.'+t.lvl)}}
     });
 }
 
-// Patch Notes
-function renderPatchNotes(){
-    var container=document.getElementById('patchNotes');container.innerHTML='';
-    PATCH_NOTES.forEach(function(p){
-        var div=document.createElement('div');div.className='patch-note '+p.type;
-        div.innerHTML='<div class="patch-troop">'+(p.type==='buff'?'🟢':'🔴')+' '+p.troop+'</div><div class="patch-desc">'+p.desc+'</div><div class="patch-src">Source: TikTok '+p.src+'</div>';
-        container.appendChild(div);
+// Patch notes
+function renderPatch(){
+    var c=document.getElementById('pNotes');c.innerHTML='';
+    PATCHES.forEach(function(p){
+        var d=document.createElement('div');d.className='pnote '+p.type;
+        d.innerHTML='<div class="pn-t">'+(p.type==='buff'?'🟢':'🔴')+' '+p.t+'</div><div class="pn-d">'+p.d+'</div><div class="pn-s">TikTok '+p.src+'</div>';
+        c.appendChild(d);
     });
 }
 
-// Build troop panel
-function buildTroopPanel(){
-    var panel=document.getElementById('troopPanel');panel.innerHTML='';
+// Build troop bar
+function buildTB(){
+    var bar=document.getElementById('troopBar');bar.innerHTML='';
     TROOPS.forEach(function(t,i){
-        var card=document.createElement('div');card.className='troop-card';card.dataset.idx=i;
+        var b=document.createElement('div');b.className='troop-btn'+(i===activeTroop?' active':'');b.dataset.idx=i;
         var badge='';
-        if(i===0)badge='<span class="troop-badge badge-buff">BUFF</span>';
-        else if(i===2)badge='<span class="troop-badge badge-nerf">NERF</span>';
-        else if(i===4)badge='<span class="troop-badge badge-buff">BUFF</span>';
-        else if(i===5)badge='<span class="troop-badge badge-nerf">NERF</span>';
-        card.innerHTML=badge+'<span class="troop-icon">'+t.icon+'</span><span class="troop-name">'+t.name+'</span><span class="troop-cost">'+t.cost+' 💰</span>';
-        card.onclick=function(){selectTroop(i)};
-        panel.appendChild(card);
+        if(i===0||i===2||i===3||i===5)badge='<span class="tb-badge badge-buff">BUFF</span>';
+        if(i===1||i===4||i===6)badge='<span class="tb-badge badge-nerf">NERF</span>';
+        b.innerHTML=badge+'<span class="tb-icon">'+t.icon+'</span><span class="tb-name">'+t.name+'</span><span class="tb-cd" id="tcd'+i+'"></span>';
+        b.onclick=function(){switchTroop(i)};
+        bar.appendChild(b);
     });
 }
 
-function selectTroop(idx){
-    if(gameState!=='PLAYING')return;
-    selectedTroop=selectedTroop===idx?-1:idx;
-    document.querySelectorAll('.troop-card').forEach(function(c,i){c.classList.toggle('selected',i===selectedTroop)});
+function switchTroop(idx){
+    if(state!=='PLAYING')return;
+    activeTroop=idx;
+    document.querySelectorAll('.troop-btn').forEach(function(b,i){b.classList.toggle('active',i===idx)});
+    // Reset troop-specific state
+    if(idx===2)shieldCharges=3+TROOPS[2].lvl;
+    showN('Equipped: '+TROOPS[idx].name);
 }
 
 function updateUI(){
-    document.getElementById('coinDisplay').textContent=coins;
-    document.getElementById('scoreDisplay').textContent=score;
-    document.getElementById('waveDisplay').textContent=wave;
-    document.getElementById('bossNumDisplay').textContent=(currentBossIdx+1)+'/'+BOSSES.length;
+    sdEl.textContent=score.toLocaleString();
+    hdEl.textContent='BEST: '+hi.toLocaleString();
+    cdEl.textContent=coins;
+    // Update cooldown displays
+    TROOPS.forEach(function(t,i){
+        var el=document.getElementById('tcd'+i);
+        if(el){
+            if(t.cd>0)el.textContent=Math.ceil(t.cd/60)+'s';
+            else if(i===6&&novaUsed)el.textContent='USED';
+            else if(i===2)el.textContent='🛡️'+shieldCharges;
+            else el.textContent='';
+        }
+    });
 }
 
 // =============================================
-// GAME LOGIC
+// GAME CORE
 // =============================================
-document.getElementById('startBtn').onclick=function(){startMusic();beginGame()};
-document.getElementById('retryBtn').onclick=function(){startMusic();beginGame()};
+document.getElementById('startBtn').onclick=function(){startM();beginGame()};
+document.getElementById('retryBtn').onclick=function(){startM();beginGame()};
 
 function beginGame(){
-    gameState='PLAYING';score=0;wave=1;coins=Math.max(coins,200);
-    currentBossIdx=0;bossActive=false;scoreSinceBossDeath=0;
-    deployedTroops=[];enemies=[];projectiles=[];particles=[];
-    spawnTimer=0;waveTimer=0;selectedTroop=-1;
-    document.getElementById('startScreen').classList.add('hidden');
-    document.getElementById('goScreen').classList.add('hidden');
-    document.getElementById('bossBarContainer').style.display='none';
-    buildTroopPanel();updateUI();
+    state='PLAYING';score=0;spd=bSpd;frm=0;
+    P.lane=1;P.ty=H-150;
+    obs=[];parts=[];indicators=[];dCD=0;novaUsed=false;
+    shieldCharges=3+TROOPS[2].lvl;shieldRegenTimer=0;freezeTimer=0;
+    currentBossIdx=0;scoreSinceBossDeath=0;
+    B.active=false;B.hp=B.mhp;B.phase=0;B.at=0;B.la=false;B.sa=false;B.y=-200;
+    TROOPS.forEach(function(t){t.cd=0});
+    ssEl.classList.add('hidden');gsEl.classList.add('hidden');bhEl.style.display='none';
+    buildTB();updateUI();
+    stars=[];for(var i=0;i<100;i++)stars.push({x:Math.random()*W,y:Math.random()*H,sz:Math.random()*2,sp:Math.random()*2+.5});
 }
 
-function gameOver(){
-    gameState='GAMEOVER';stopMusic();
-    document.getElementById('finalScore').textContent=score.toLocaleString();
-    document.getElementById('goScreen').classList.remove('hidden');
-}
+function die(){state='GAMEOVER';stopM();if(score>hi){hi=score;localStorage.setItem('nvTRHS',hi)}fsEl.textContent=score.toLocaleString();gsEl.classList.remove('hidden');trail(P.x,P.y,'#f0f',50)}
+function trail(x,y,c,n){for(var i=0;i<n;i++)parts.push({x:x+(Math.random()-.5)*20,y:y+(Math.random()-.5)*20,vx:(Math.random()-.5)*4,vy:(Math.random()-.5)*4+2,life:1,dec:.02+Math.random()*.03,sz:Math.random()*4+1,c:c})}
+function warn(){var w=document.getElementById('wo');w.classList.remove('active');void w.offsetWidth;w.classList.add('active')}
 
-// Canvas click to deploy
-canvas.addEventListener('click',function(e){
-    if(gameState!=='PLAYING'||selectedTroop<0)return;
-    var t=TROOPS[selectedTroop];
-    if(coins<t.cost){showNotif('Not enough coins!');return}
-    // Only deploy in bottom half
-    if(e.clientY<H*0.4){showNotif('Deploy in lower zone!');return}
-    coins-=t.cost;
-    var mult=1+t.lvl*0.1;var hpMult=1+t.lvl*0.15;
-    deployedTroops.push({
-        x:e.clientX,y:e.clientY,
-        hp:Math.floor(t.hp*hpMult),maxHp:Math.floor(t.hp*hpMult),
-        dmg:Math.floor(t.dmg*mult),range:t.range,spd:t.spd,atkSpd:t.atkSpd,
-        atkTimer:0,type:t.type,status:t.status,color:t.color,
-        icon:t.icon,id:t.id,buffed:false
-    });
-    spawnParticles(e.clientX,e.clientY,t.color,8);
-    selectedTroop=-1;
-    document.querySelectorAll('.troop-card').forEach(function(c){c.classList.remove('selected')});
-    updateUI();
-});
-
-function spawnEnemy(isBoss){
-    var laneX=W*0.2+Math.random()*W*0.6;
-    if(isBoss){
-        var b=BOSSES[currentBossIdx];
-        bossActive=true;bossHp=b.hp;bossMaxHp=b.hp;
-        enemies.push({x:laneX,y:-80,hp:b.hp,maxHp:b.hp,dmg:b.dmg,spd:0.3,color:b.color,isBoss:true,radius:40});
-        document.getElementById('bossBarContainer').style.display='block';
-        document.getElementById('bossNameDisplay').textContent='⚠ '+b.name+' ⚠';
-        document.getElementById('bossReqDisplay').textContent='Kill to earn 7,000 score for next boss';
-        showNotif('⚠ BOSS '+b.name+' APPROACHING!');
-    }else{
-        var hpBase=50+wave*20;var dmgBase=8+wave*3;
-        enemies.push({x:laneX,y:-40,hp:hpBase,maxHp:hpBase,dmg:dmgBase,spd:0.5+wave*0.05,color:'#f44',isBoss:false,radius:15});
+// Drop indicators
+function addInd(x,ty,delay,c){indicators.push({x:x,y:ty,timer:delay,max:delay,c:c||'#f44'})}
+function updInd(){for(var i=indicators.length-1;i>=0;i--){indicators[i].timer--;if(indicators[i].timer<=0)indicators.splice(i,1)}}
+function drawInd(){
+    for(var i=0;i<indicators.length;i++){
+        var ind=indicators[i],prog=1-(ind.timer/ind.max),pulse=.3+Math.sin(frm*.3)*.2,alpha=pulse*(.3+prog*.7),rad=18+prog*22;
+        cx.save();cx.globalAlpha=alpha;cx.strokeStyle=ind.c;cx.lineWidth=2;
+        cx.beginPath();cx.arc(ind.x,ind.y,rad,0,Math.PI*2);cx.stroke();
+        cx.fillStyle=ind.c;cx.globalAlpha=alpha*.3;cx.beginPath();cx.arc(ind.x,ind.y,rad*.6,0,Math.PI*2);cx.fill();
+        cx.globalAlpha=alpha*.7;cx.lineWidth=1;cx.beginPath();cx.moveTo(ind.x-rad,ind.y);cx.lineTo(ind.x+rad,ind.y);cx.stroke();
+        cx.beginPath();cx.moveTo(ind.x,ind.y-rad);cx.lineTo(ind.x,ind.y+rad);cx.stroke();cx.restore();
     }
 }
 
-function spawnParticles(x,y,color,count){
-    for(var i=0;i<count;i++)particles.push({x:x,y:y,vx:(Math.random()-0.5)*4,vy:(Math.random()-0.5)*4,life:1,dec:0.03+Math.random()*0.03,sz:Math.random()*3+1,c:color});
+// Normal obstacles
+function spawnObs(){
+    var li=Math.floor(Math.random()*lanes.length),elw=expanded?LW*.8:LW;
+    var ox=W/2+lanes[li]*elw,oy=-60;
+    var tf=Math.floor((P.y-oy)/(spd*1.2));
+    addInd(ox,P.y,tf,'#f0f');
+    obs.push({x:ox,y:oy,w:40,h:20,t:'plat',c:'#b44dff',vy:spd*1.2,br:25});
 }
 
 // =============================================
-// UPDATE LOOP
+// TROOP ATTACK SYSTEM
+// =============================================
+function troopAttack(){
+    var tr=TROOPS[activeTroop];
+    var lvlMult=1+tr.lvl*0.1;
+
+    // Cooldown tick
+    TROOPS.forEach(function(t){if(t.cd>0)t.cd--});
+
+    // Shield regen
+    if(activeTroop===2){shieldRegenTimer++;if(shieldRegenTimer>=600){shieldCharges=Math.min(shieldCharges+1,3+tr.lvl);shieldRegenTimer=0}}
+
+    // Freeze timer
+    if(freezeTimer>0)freezeTimer--;
+
+    // AUTO ATTACK troops (Blaster, Missile, Drain)
+    if(tr.atkType==='auto'&&B.active){
+        if(frm%Math.max(1,Math.floor(tr.rate/lvlMult))===0){
+            var dmg=Math.floor(tr.dmg*lvlMult);
+            if(tr.status==='lifesteal'){
+                // Heal player score as HP proxy
+                score+=Math.floor(dmg/2);
+                trail(P.x,P.y,'#f0f',3);
+            }
+            B.hp-=dmg;
+            // Visual projectile
+            parts.push({x:P.x,y:P.y-20,vx:0,vy:-12,life:1,dec:.03,sz:4,c:tr.color});
+            if(B.hp<=0)bossWin();
+        }
+    }
+
+    // BEAM (Laser) - continuous damage while boss active
+    if(tr.status==='beam'&&B.active&&B.y>=-100){
+        var dps=tr.dmg*lvlMult/60;
+        B.hp-=dps;
+        // Beam visual handled in draw
+        if(B.hp<=0)bossWin();
+    }
+
+    // ACTIVE abilities (EMP, Nova) triggered by SPACE when equipped
+    // (handled in keydown)
+}
+
+// =============================================
+// BOSS SYSTEM (Same runner boss, sequential)
+// =============================================
+function activateBoss(){
+    if(currentBossIdx>=BOSSES.length)return;
+    var b=BOSSES[currentBossIdx];
+    B.active=true;B.mhp=b.hp;B.hp=b.hp;B.phase=0;B.y=-200;
+    bhEl.style.display='block';bnameEl.textContent='⚠ '+b.name+' ⚠';
+    breqEl.textContent='Kill → earn 7,000 score for next boss';
+    warn();showN('⚠ BOSS: '+b.name);
+}
+
+function updateBoss(){
+    if(!B.active)return;
+    if(B.y<B.ty){B.y+=3;return}
+    if(freezeTimer>0)return; // Frozen!
+    B.at++;
+    var pat=B.pats[B.phase%B.pats.length];
+    bphEl.textContent=PNAMES[B.phase%PNAMES.length];
+    var hpPct=B.hp/B.mhp;
+    if(hpPct<.8&&B.phase===0){B.phase=1;B.at=0;expandArena(7);warn()}
+    else if(hpPct<.6&&B.phase===1){B.phase=2;B.at=0;warn()}
+    else if(hpPct<.4&&B.phase===2){B.phase=3;B.at=0;warn()}
+    else if(hpPct<.2&&B.phase===3){B.phase=4;B.at=0;warn()}
+
+    if(pat==='meteor')bossMeteor();
+    else if(pat==='expand')bossExpand();
+    else if(pat==='laser')bossLaser();
+    else if(pat==='shockwave')bossShockwave();
+    else if(pat==='chaos')bossChaos();
+
+    if(B.at%120===0)spawnObs();
+    bhpEl.style.width=Math.max(0,(B.hp/B.mhp)*100)+'%';
+}
+
+function bossMeteor(){
+    if(B.at%100===0){warn();var safe=Math.floor(Math.random()*3);
+        for(var l=0;l<3;l++){if(l===safe)continue;var lx=W/2+[-1,0,1][l]*LW;addInd(lx,P.y,70,'#f44');obs.push({x:lx,y:-80,w:50,h:50,t:'m',c:'#f44',vy:spd*1.3,br:LW*.6})}}
+}
+function bossExpand(){
+    if(B.at%80===0){warn();var safe=Math.floor(Math.random()*lanes.length);
+        for(var i=0;i<lanes.length;i++){if(i===safe)continue;if(Math.random()<.5){var ox=W/2+lanes[i]*(LW*.8);addInd(ox,P.y,60,'#f0f');obs.push({x:ox,y:-60,w:35,h:35,t:'b',c:'#f0f',vy:spd*1.8,br:28})}}}
+}
+function bossLaser(){
+    if(B.at%220===0){B.la=true;B.lx=W/2+lanes[0]*LW-LW;warn()}
+    if(B.la){B.lx+=7;if(Math.abs(P.x-B.lx)<45&&!dashing){die();return}var re=W/2+lanes[lanes.length-1]*LW+LW;if(B.lx>re)B.la=false}
+}
+function bossShockwave(){
+    if(B.at%170===0){B.sa=true;B.sr=0;warn()}
+    if(B.sa){B.sr+=5;var dx=P.x-W/2,dy=P.y-(B.y+50),dist=Math.sqrt(dx*dx+dy*dy);if(Math.abs(dist-B.sr)<40&&!dashing){die();return}if(B.sr>W)B.sa=false}
+}
+function bossChaos(){
+    if(B.at%50===0){warn();var sub=Math.floor(Math.random()*4),elw=LW*.8;
+        if(sub===0){var safe=Math.floor(Math.random()*lanes.length);for(var i=0;i<lanes.length;i++){if(i===safe)continue;if(Math.random()<.5){var ox=W/2+lanes[i]*elw;addInd(ox,P.y,50,'#f44');obs.push({x:ox,y:-60,w:45,h:45,t:'m',c:'#f44',vy:spd*2,br:LW*.5})}}}
+        else if(sub===1){var bl=Math.floor(Math.random()*lanes.length);var ox=W/2+lanes[bl]*elw;addInd(ox,P.y,50,'#f0f');obs.push({x:ox,y:-60,w:30,h:30,t:'b',c:'#f0f',vy:spd*1.8,br:25})}
+        else if(sub===2){B.la=true;B.lx=P.x+(Math.random()>.5?200:-200)}
+        else{B.sa=true;B.sr=0}}
+}
+function expandArena(n){expanded=true;lanes=[];var h=Math.floor(n/2);for(var i=-h;i<=h;i++)lanes.push(i);LW=Math.min(120,(W*.8)/n);P.lane=Math.floor(lanes.length/2)}
+function bossWin(){
+    B.active=false;bhEl.style.display='none';expanded=false;lanes=[-1,0,1];LW=120;P.lane=1;
+    score+=7000;scoreSinceBossDeath=0;bSpd+=3;currentBossIdx++;
+    trail(W/2,B.y,'#0ff',100);trail(W/2,B.y,'#f0f',80);
+    showN('✅ BOSS DEFEATED! +7,000 SCORE');
+    if(currentBossIdx>=BOSSES.length)showN('🏆 ALL BOSSES CLEARED!');
+}
+
+// =============================================
+// INPUT
+// =============================================
+var keys={};
+addEventListener('keydown',function(e){
+    keys[e.code]=true;if(state!=='PLAYING')return;
+    var ml=lanes.length-1;
+    if((e.code==='ArrowLeft'||e.code==='KeyA')&&P.lane>0){P.lane--;trail(P.x,P.y,'#0ff',5)}
+    if((e.code==='ArrowRight'||e.code==='KeyD')&&P.lane<ml){P.lane++;trail(P.x,P.y,'#0ff',5)}
+    if(B.active){
+        if((e.code==='ArrowUp'||e.code==='KeyW')&&P.ty>H*.4)P.ty-=60;
+        if((e.code==='ArrowDown'||e.code==='KeyS')&&P.ty<H-80)P.ty+=60;
+    }
+    // Dash OR Active Ability
+    if(e.code==='Space'){
+        var tr=TROOPS[activeTroop];
+        if(tr.status==='freeze'&&tr.cd<=0){
+            freezeTimer=150;tr.cd=tr.maxCd;showN('❄️ EMP ACTIVATED! Enemies frozen!');warn();
+        }else if(tr.status==='nuke'&&!novaUsed){
+            novaUsed=true;obs=[];if(B.active)B.hp-=TROOPS[6].dmg*(1+TROOPS[6].lvl*.1);
+            trail(P.x,P.y,'#ffd700',60);showN('💥 NOVA BLAST!');warn();
+            if(B.active&&B.hp<=0)bossWin();
+        }else if(dCD<=0){
+            dashing=true;dCD=120;spd=Math.min(spd+10,mSpd+10);trail(P.x,P.y,'#fff',20);
+            setTimeout(function(){dashing=false},300);
+        }
+    }
+    // Number keys to switch troop
+    if(e.key>='1'&&e.key<='7')switchTroop(parseInt(e.key)-1);
+});
+addEventListener('keyup',function(e){keys[e.code]=false});
+
+// =============================================
+// MAIN LOOP
 // =============================================
 function update(){
-    if(gameState!=='PLAYING')return;
+    if(state!=='PLAYING')return;
+    frm++;
+    if(!B.active&&spd<mSpd)spd+=.002;
+    if(dCD>0)dCD--;
+    if(!dashing&&dCD<90&&spd>bSpd+frm*.001)spd-=.2;
+    score+=Math.floor(B.active?spd*2:spd);
+    if(!B.active)scoreSinceBossDeath+=Math.floor(spd);
+    gOff=(gOff+spd)%80;
 
-    // Wave spawning
-    spawnTimer++;
-    var spawnRate=Math.max(30,120-wave*5);
-    if(!bossActive&&spawnTimer>=spawnRate){spawnEnemy(false);spawnTimer=0}
+    if(!B.active&&frm%45===0)spawnObs();
+    if(!B.active&&scoreSinceBossDeath>=7000&&currentBossIdx<BOSSES.length)activateBoss();
 
-    // Boss trigger: need 7000 score since last boss death
-    if(!bossActive&&currentBossIdx<BOSSES.length&&scoreSinceBossDeath>=7000){
-        spawnEnemy(true);scoreSinceBossDeath=0;
-    }
+    var elw=expanded?LW*.8:LW;
+    P.tx=W/2+lanes[P.lane]*elw;P.x+=(P.tx-P.x)*.15;P.y+=(P.ty-P.y)*.12;
+    if(!B.active)P.ty=H-150;
 
-    // Commander buff check
-    deployedTroops.forEach(function(tr){tr.buffed=false});
-    deployedTroops.forEach(function(cmd){
-        if(cmd.status==='buff'){
-            deployedTroops.forEach(function(tr){
-                if(tr!==cmd){
-                    var dx=tr.x-cmd.x,dy=tr.y-cmd.y;
-                    if(Math.sqrt(dx*dx+dy*dy)<180)tr.buffed=true;
-                }
-            });
+    // Obstacle collision
+    for(var i=obs.length-1;i>=0;i--){
+        var o=obs[i];o.y+=(o.vy||spd);
+        var dx=P.x-o.x,dy=P.y-o.y,dist=Math.sqrt(dx*dx+dy*dy);
+        var hd=o.br||(o.w/2+P.w/2);
+        if(dist<hd&&!dashing){
+            // Shield check
+            if(activeTroop===2&&shieldCharges>0){
+                shieldCharges--;shieldRegenTimer=0;
+                obs.splice(i,1);trail(P.x,P.y,'#4af',10);showN('🛡️ Shield blocked! ('+shieldCharges+' left)');continue;
+            }
+            die();return;
         }
-    });
-
-    // Troop AI
-    deployedTroops.forEach(function(tr){
-        tr.atkTimer+=1/60;
-        var target=null,minDist=Infinity;
-
-        if(tr.status==='heal'){
-            // Find wounded ally
-            deployedTroops.forEach(function(ally){
-                if(ally!==tr&&ally.hp<ally.maxHp){
-                    var dx=ally.x-tr.x,dy=ally.y-tr.y,d=Math.sqrt(dx*dx+dy*dy);
-                    if(d<tr.range&&d<minDist){minDist=d;target=ally}
-                }
-            });
-            if(target&&tr.atkTimer>=tr.atkSpd){
-                target.hp=Math.min(target.maxHp,target.hp+tr.dmg);
-                tr.atkTimer=0;spawnParticles(target.x,target.y,'#0f0',3);
-            }
-        }else{
-            // Find nearest enemy
-            enemies.forEach(function(en){
-                var dx=en.x-tr.x,dy=en.y-tr.y,d=Math.sqrt(dx*dx+dy*dy);
-                if(d<tr.range&&d<minDist){minDist=d;target=en}
-            });
-            if(target&&tr.atkTimer>=tr.atkSpd){
-                var dmg=tr.dmg*(tr.buffed?1.2:1);
-                if(tr.status==='crit'&&Math.random()<0.3)dmg*=2.5;
-                projectiles.push({x:tr.x,y:tr.y,tx:target.x,ty:target.y,dmg:dmg,spd:8,color:tr.color,status:tr.status,target:target});
-                tr.atkTimer=0;
-            }
-        }
-    });
-
-    // Projectiles
-    for(var i=projectiles.length-1;i>=0;i--){
-        var p=projectiles[i];
-        var dx=p.tx-p.x,dy=p.ty-p.y,d=Math.sqrt(dx*dx+dy*dy);
-        if(d<p.spd){
-            // Hit
-            if(p.status==='aoe'){
-                enemies.forEach(function(en){
-                    var ex=en.x-p.tx,ey=en.y-p.ty;
-                    if(Math.sqrt(ex*ex+ey*ey)<100)en.hp-=p.dmg;
-                });
-                spawnParticles(p.tx,p.ty,'#f80',12);
-            }else if(p.status==='pierce'){
-                var hitCount=0;
-                enemies.forEach(function(en){
-                    var ex=en.x-p.tx,ey=en.y-p.ty;
-                    if(Math.sqrt(ex*ex+ey*ey)<40&&hitCount<2){en.hp-=p.dmg;hitCount++}
-                });
-            }else{
-                if(p.target)p.target.hp-=p.dmg;
-            }
-            projectiles.splice(i,1);
-        }else{
-            p.x+=dx/d*p.spd;p.y+=dy/d*p.spd;
-        }
+        if(o.y>H+100)obs.splice(i,1);
     }
 
-    // Enemies
-    for(var i=enemies.length-1;i>=0;i--){
-        var en=enemies[i];
-        en.y+=en.spd;
-
-        // Attack troops
-        var attacked=false;
-        deployedTroops.forEach(function(tr){
-            var dx=tr.x-en.x,dy=tr.y-en.y;
-            if(Math.sqrt(dx*dx+dy*dy)<en.radius+20){
-                tr.hp-=en.dmg/60;attacked=true;
-            }
-        });
-
-        // Enemy death
-        if(en.hp<=0){
-            var pts=en.isBoss?2000:50+wave*10;
-            score+=pts;
-            if(!bossActive)scoreSinceBossDeath+=pts;
-            spawnParticles(en.x,en.y,en.color,en.isBoss?40:10);
-
-            if(en.isBoss){
-                bossActive=false;
-                score+=BOSSES[currentBossIdx].scoreReward;
-                scoreSinceBossDeath=0;
-                currentBossIdx++;
-                document.getElementById('bossBarContainer').style.display='none';
-                showNotif('✅ BOSS DEFEATED! +7,000 SCORE');
-                if(currentBossIdx>=BOSSES.length){
-                    showNotif('🏆 ALL BOSSES DEFEATED! YOU WIN!');
-                }
-            }
-            enemies.splice(i,1);updateUI();continue;
-        }
-
-        // Reached base
-        if(en.y>H+50){gameOver();return}
-    }
-
-    // Dead troops
-    for(var i=deployedTroops.length-1;i>=0;i--){
-        if(deployedTroops[i].hp<=0){spawnParticles(deployedTroops[i].x,deployedTroops[i].y,deployedTroops[i].color,8);deployedTroops.splice(i,1)}
-    }
-
-    // Particles
-    for(var i=particles.length-1;i>=0;i--){
-        var p=particles[i];p.x+=p.vx;p.y+=p.vy;p.life-=p.dec;
-        if(p.life<=0)particles.splice(i,1);
-    }
-
-    // Boss HP bar
-    if(bossActive){
-        var bossEn=enemies.find(function(e){return e.isBoss});
-        if(bossEn)document.getElementById('bossHpFill').style.width=Math.max(0,(bossEn.hp/bossMaxHp)*100)+'%';
-    }
-
-    // Passive coin income
-    if(spawnTimer%300===0&&spawnTimer>0)coins+=10;
-    updateUI();
+    for(var i=parts.length-1;i>=0;i--){var p=parts[i];p.x+=p.vx;p.y+=p.vy;p.life-=p.dec;if(p.life<=0)parts.splice(i,1)}
+    for(var i=0;i<stars.length;i++){var s=stars[i];s.y+=s.sp*(spd/bSpd);if(s.y>H){s.y=0;s.x=Math.random()*W}}
+    if(frm%3===0)trail(P.x,P.y+15,dashing?'#fff':'#0ff',1);
+    updInd();troopAttack();updateBoss();updateUI();
 }
 
-// =============================================
-// DRAW LOOP
-// =============================================
 function draw(){
-    ctx.fillStyle='#0a0a0f';ctx.fillRect(0,0,W,H);
+    cx.fillStyle='rgba(10,10,15,0.3)';cx.fillRect(0,0,W,H);
+    for(var i=0;i<stars.length;i++){var s=stars[i];cx.fillStyle='rgba(255,255,255,'+(0.3+Math.random()*.3)+')';cx.fillRect(s.x,s.y,s.sz,s.sz)}
+    var cxx=W/2,hor=H*.3,elw=expanded?LW*.8:LW;
+    cx.strokeStyle=B.active?'rgba(255,0,100,.12)':'rgba(0,255,255,.1)';cx.lineWidth=1;
+    for(var i=-8;i<=8;i++){cx.beginPath();cx.moveTo(cxx+i*elw,H);cx.lineTo(cxx+i*15,hor);cx.stroke()}
+    for(var i=0;i<15;i++){var y=hor+((i*80+gOff)/(H-hor))*(H-hor);if(y>H)continue;cx.globalAlpha=((y-hor)/(H-hor))*.3;cx.beginPath();cx.moveTo(0,y);cx.lineTo(W,y);cx.stroke()}
+    cx.globalAlpha=1;
+    cx.strokeStyle=B.active?'rgba(255,0,100,.2)':'rgba(255,0,255,.15)';cx.lineWidth=2;
+    for(var i=0;i<lanes.length;i++){var l=lanes[i];cx.beginPath();cx.moveTo(cxx+l*elw-20,H);cx.lineTo(cxx+l*8-3,hor);cx.moveTo(cxx+l*elw+20,H);cx.lineTo(cxx+l*8+3,hor);cx.stroke()}
+    drawInd();
 
-    // Grid
-    ctx.strokeStyle='rgba(0,255,255,0.05)';ctx.lineWidth=1;
-    for(var x=0;x<W;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
-    for(var y=0;y<H;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
-
-    // Deploy zone line
-    ctx.strokeStyle='rgba(0,255,255,0.15)';ctx.lineWidth=2;ctx.setLineDash([10,10]);
-    ctx.beginPath();ctx.moveTo(0,H*0.4);ctx.lineTo(W,H*0.4);ctx.stroke();ctx.setLineDash([]);
-    ctx.fillStyle='rgba(0,255,255,0.03)';ctx.fillRect(0,H*0.4,W,H*0.6);
-
-    // Deployed troops
-    deployedTroops.forEach(function(tr){
-        ctx.shadowBlur=10;ctx.shadowColor=tr.color;
-        ctx.fillStyle=tr.color;
-        ctx.beginPath();ctx.arc(tr.x,tr.y,14,0,Math.PI*2);ctx.fill();
-        ctx.shadowBlur=0;
-        // Icon
-        ctx.font='14px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-        ctx.fillText(tr.icon,tr.x,tr.y);
-        // HP bar
-        var hpPct=tr.hp/tr.maxHp;
-        ctx.fillStyle='#333';ctx.fillRect(tr.x-12,tr.y-22,24,4);
-        ctx.fillStyle=hpPct>0.5?'#0f0':hpPct>0.25?'#ff0':'#f44';
-        ctx.fillRect(tr.x-12,tr.y-22,24*hpPct,4);
-        // Buff indicator
-        if(tr.buffed){ctx.strokeStyle='#ffd700';ctx.lineWidth=2;ctx.beginPath();ctx.arc(tr.x,tr.y,18,0,Math.PI*2);ctx.stroke()}
-        // Range indicator when selected
-        if(selectedTroop>=0&&TROOPS[selectedTroop].id===tr.id){
-            ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(tr.x,tr.y,tr.range,0,Math.PI*2);ctx.stroke();
+    // Boss
+    if(B.active&&B.y>=-100){
+        cx.shadowBlur=30;cx.shadowColor=BOSSES[currentBossIdx]?BOSSES[currentBossIdx].color:'#f44';cx.fillStyle=cx.shadowColor;
+        cx.beginPath();cx.moveTo(cxx,B.y-50);cx.lineTo(cxx+60,B.y+20);cx.lineTo(cxx+30,B.y+50);cx.lineTo(cxx-30,B.y+50);cx.lineTo(cxx-60,B.y+20);cx.closePath();cx.fill();
+        cx.fillStyle='#fff';cx.beginPath();cx.arc(cxx,B.y+5,12,0,Math.PI*2);cx.fill();
+        cx.fillStyle='#f0f';cx.beginPath();cx.arc(cxx,B.y+5,6,0,Math.PI*2);cx.fill();cx.shadowBlur=0;
+        // Laser beam visual
+        if(B.la){cx.shadowBlur=20;cx.shadowColor='#f44';cx.strokeStyle='#f44';cx.lineWidth=8;cx.beginPath();cx.moveTo(B.lx,B.y+50);cx.lineTo(B.lx,H);cx.stroke();cx.strokeStyle='#fff';cx.lineWidth=3;cx.beginPath();cx.moveTo(B.lx,B.y+50);cx.lineTo(B.lx,H);cx.stroke();cx.shadowBlur=0}
+        if(B.sa){cx.shadowBlur=15;cx.shadowColor='#f0f';cx.strokeStyle='rgba(255,0,255,'+Math.max(0,1-B.sr/W)+')';cx.lineWidth=6;cx.beginPath();cx.arc(cxx,B.y+50,B.sr,0,Math.PI*2);cx.stroke();cx.shadowBlur=0}
+        // Freeze overlay
+        if(freezeTimer>0){cx.fillStyle='rgba(0,200,255,0.1)';cx.fillRect(0,0,W,H)}
+        // Player laser beam (if LASER troop equipped)
+        if(TROOPS[activeTroop].status==='beam'){
+            cx.shadowBlur=15;cx.shadowColor=TROOPS[1].color;cx.strokeStyle=TROOPS[1].color;cx.lineWidth=4;
+            cx.beginPath();cx.moveTo(P.x,P.y-20);cx.lineTo(cxx,B.y+30);cx.stroke();
+            cx.strokeStyle='#fff';cx.lineWidth=1.5;cx.beginPath();cx.moveTo(P.x,P.y-20);cx.lineTo(cxx,B.y+30);cx.stroke();cx.shadowBlur=0;
         }
-    });
+    }
 
-    // Enemies
-    enemies.forEach(function(en){
-        ctx.shadowBlur=en.isBoss?25:10;ctx.shadowColor=en.color;ctx.fillStyle=en.color;
-        ctx.beginPath();ctx.arc(en.x,en.y,en.radius,0,Math.PI*2);ctx.fill();
-        ctx.shadowBlur=0;
-        if(en.isBoss){
-            ctx.font='24px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-            ctx.fillText('👹',en.x,en.y);
-        }else{
-            ctx.font='12px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-            ctx.fillText('👾',en.x,en.y);
-        }
-        // HP bar
-        var hpPct=en.hp/en.maxHp;
-        ctx.fillStyle='#333';ctx.fillRect(en.x-en.radius,en.y-en.radius-8,en.radius*2,4);
-        ctx.fillStyle='#f44';ctx.fillRect(en.x-en.radius,en.y-en.radius-8,en.radius*2*hpPct,4);
-    });
+    // Obstacles
+    for(var i=0;i<obs.length;i++){
+        var o=obs[i];cx.shadowBlur=15;cx.shadowColor=o.c;cx.fillStyle=o.c;
+        if(o.t==='m'){cx.beginPath();cx.arc(o.x,o.y,o.w/2,0,Math.PI*2);cx.fill();cx.strokeStyle='rgba(255,68,68,.3)';cx.lineWidth=1;cx.beginPath();cx.arc(o.x,o.y,o.br,0,Math.PI*2);cx.stroke()}
+        else if(o.t==='plat'){cx.beginPath();cx.roundRect(o.x-o.w/2,o.y-o.h/2,o.w,o.h,6);cx.fill();cx.strokeStyle='rgba(200,150,255,.6)';cx.lineWidth=2;cx.beginPath();cx.moveTo(o.x-o.w/2+4,o.y-o.h/2);cx.lineTo(o.x+o.w/2-4,o.y-o.h/2);cx.stroke()}
+        else{cx.beginPath();cx.moveTo(o.x,o.y-o.h/2);cx.lineTo(o.x+o.w/2,o.y);cx.lineTo(o.x,o.y+o.h/2);cx.lineTo(o.x-o.w/2,o.y);cx.closePath();cx.fill()}
+        cx.shadowBlur=0;
+    }
 
-    // Projectiles
-    projectiles.forEach(function(p){
-        ctx.shadowBlur=8;ctx.shadowColor=p.color;ctx.fillStyle=p.color;
-        ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
-    });
+    // Player
+    if(state==='PLAYING'){
+        var tc=TROOPS[activeTroop].color;
+        cx.shadowBlur=dashing?30:20;cx.shadowColor=dashing?'#fff':tc;cx.fillStyle=dashing?'#fff':tc;
+        cx.beginPath();cx.moveTo(P.x,P.y-P.h/2);cx.lineTo(P.x+P.w/2,P.y+P.h/2);cx.lineTo(P.x,P.y+P.h/3);cx.lineTo(P.x-P.w/2,P.y+P.h/2);cx.closePath();cx.fill();
+        // Shield visual
+        if(activeTroop===2&&shieldCharges>0){cx.strokeStyle='#4af';cx.lineWidth=2;cx.globalAlpha=.5+Math.sin(frm*.1)*.2;cx.beginPath();cx.arc(P.x,P.y,P.w,0,Math.PI*2);cx.stroke();cx.globalAlpha=1}
+        cx.shadowBlur=0;
+    }
 
-    // Particles
-    particles.forEach(function(p){
-        ctx.globalAlpha=p.life;ctx.fillStyle=p.c;
-        ctx.fillRect(p.x-p.sz/2,p.y-p.sz/2,p.sz,p.sz);
-    });
-    ctx.globalAlpha=1;
+    for(var i=0;i<parts.length;i++){var p=parts[i];cx.globalAlpha=p.life;cx.fillStyle=p.c;cx.fillRect(p.x-p.sz/2,p.y-p.sz/2,p.sz,p.sz)}
+    cx.globalAlpha=1;
+    sbEl.style.width=Math.max(Math.min(((spd-bSpd)/(mSpd-bSpd))*100,100),5)+'%';
 }
 
 function loop(){update();draw();requestAnimationFrame(loop)}
-buildTroopPanel();updateUI();loop();
+buildTB();updateUI();loop();
 </script>
 </body>
 </html>
